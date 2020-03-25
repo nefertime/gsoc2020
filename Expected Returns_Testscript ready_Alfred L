@@ -1,0 +1,112 @@
+###-------------------------------------------------------------------###
+### Exercise 1 ###
+### Consider a (univariate) lognormal random variable: Lognormal distribution X ~ logN(mu, sigma^2) ###
+
+## A) Write a R function that determines the value of mu and the sigma^2 
+#  parameters from expectation #E{X} and #V{X}
+
+determineparameters <- function(E,V) {
+  mu <- log(E^2/sqrt(V + E^2))
+  sigma2 <- log(1+V/E^2)
+  
+  return(c(mu, sigma2))
+}
+
+## B) Use the function created in a) to determine the parameters
+# Example inputs:
+# E <- 3
+# V <- 5
+mu <- determineparameters(E = 3, V = 5)[1]
+sigma2 <- determineparameters(3, 5)[2]
+
+## C) Generate a large sample from the distribution of X with such parameters;
+set.seed(25)
+n <- 500
+sample_a <- rlnorm(n, mu, sqrt(sigma2))
+
+## D) Plot the sample (do not join the observations, show them as dots)
+samplePLOT <- plot(sample_a,
+                   xlab ="Number of samples",
+                   ylab = "Value", 
+                   main = "Large sample from distribution of X", 
+                   col = "red",
+                   pch = 16)
+
+legend("topright",legend = "Observation", col = 2, pch = 16) 
+
+## E) Plot the histogram (suitably normalized) and superimpose the exact pdf for comparison
+histogram <- hist(sample_a,
+                  breaks = 100,
+                  freq = F,
+                  main = "Histogram of Simulation data",
+                  xlab = "Value",
+                  col = "grey",
+                  probability = T)
+#
+lines(density(sample_a),lwd = 2,col = "red")
+#
+x <- seq(0,20,length.out = 1e4)
+#
+lines(x, dlnorm(x,mu,sqrt(sigma2)), col = "blue") 
+#
+legend("topright",legend=c("Observed density","True density"),col = c("red","blue"),pch = c(15,15),bty = "n")
+
+## F) Plot the empirical cdf and superimpose the exact cdf for comparison.
+# B.5
+plot(ecdf(sample_a),
+     xlab = "Value",
+     ylab = "Probability",
+     main = "Empirical CDF vs Exact CDF")
+
+lines(x, plnorm(x, mu, sqrt(sigma2)), 
+      col = "orange", lty = 1, lwd = 2)
+
+legend("bottomright", 
+       legend = c("Empirical CDF","Exact CDF"),
+       col = c("black","orange"),
+       pch = 15)
+
+# End of Exercise 1 - Clean up your workspace 
+#graphics.off()
+#rm(list = ls(all = TRUE))
+
+###
+###-------------------------------------------------------------------###
+### Exercise 2 ###
+
+### A) Write a function that implements the routine written in the pseudo-code (fit_locdisp_mlfp).
+fit_locdisp_mlfp <- function(epsl,p,threshold,v) {
+  
+  ## 0) Initialize mean and covariance
+  mu_e_hfp <- sum(p*epsl)
+  mu <- mu_e_hfp
+  sigma2_e_hfp <- sum(p*(epsl-mu_e_hfp)*(epsl-mu_e_hfp))
+  sigma2_hfp<- sigma2_e_hfp
+  if (v > 2) {
+    sigma2_e_hfp <- sigma2_e_hfp * ((v - 2)/ v)
+  }
+  ## 1) Update weights and FP
+  w <- (v+length(epsl))/(((epsl-mu)*sigma2_hfp)*(epsl-mu)+v)
+  q <- (p*w)/sum(p*w)
+  
+  ## 2) Update Output
+  mu_e_mlfp <- sum(q*epsl)
+  sigma2_e_mlfp <- sum(q*(epsl-mu_e_mlfp)*(epsl-mu_e_mlfp))
+  
+  ## 3) Convergence
+  test1 <- sum(mu_e_mlfp) - mu
+  test2 <- sum(sigma2_e_mlfp) - sigma2_hfp
+  if(((sqrt(test1^2))<threshold) && ((sqrt(test1^2))<threshold)) {
+    return(c(sum(mu_e_mlfp), sum(sigma2_e_mlfp)))
+  } else {
+    return(c(mu, sigma2_hfp))
+  }	
+}
+
+### B) Test the fit_locdisp_mlfp function
+
+fit_locdisp_mlfp(rnorm(1000), rep(1/1000, 1000),1e-9,100)
+
+# End of Exercise 2 - Clean up your workspace   
+#rm(list = ls(all = TRUE))
+
